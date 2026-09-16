@@ -43,7 +43,7 @@
             x-transition.opacity
             @click="open = null"
             @keydown.escape.window="open = null">
-            <div class="max-w-4xl w-full" @click.stop>
+            <div class="max-w-[112rem] w-full" @click.stop>
                 <div class="flex items-center justify-between mb-3">
                     <h3 class="text-zinc-100 text-[13.5px] font-medium" x-text="current?.title"></h3>
                     <button type="button" class="text-zinc-400 hover:text-white" @click="open = null">
