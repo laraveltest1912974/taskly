@@ -4,6 +4,35 @@ Cilj: učenje Laravela kroz izradu ToDo List aplikacije na razne načine (Blade,
 
 > **Status: PAUZIRANO nakon Faze 7 + redizajna frontend-a.** Faze 0–7 su odrađene i testirane. Faza 8 (Livewire/Inertia/API/Filament varijante) nije počela. Ova beleška služi kao referenca za pitanja o dosad urađenom — sekcije ispod prate hronologiju rada, "Brzi pregled" ispod je sažetak za brzo pretraživanje.
 
+## 🐛 KRITIČAN BAG — sidebar nav nije primao klikove (2026-09-16, nakon dark redizajna)
+
+Korisnik je prijavio: "Ne mogu da klikćem po navigaciji i drugim delovima sajta." Ovo je bio pravi bag u produkcionom kodu (ne artefakt automatizacije), prisutan otkad je dark tema uvedena.
+
+**Uzrok:** U `layouts/app.blade.php`, desktop `<aside>` sidebar je `lg:fixed lg:inset-y-0` ali BEZ eksplicitnog `z-index`. Glavni content wrapper (`<div class="relative flex-1 ... lg:pl-60 ...">`) je `position: relative` (dodato radi pozicioniranja blob SVG-a) i dolazi POSLE aside-a u DOM-u. Pošto je `<aside>` `position: fixed`, izlazi iz flex flow-a, pa content-div (jedini preostali flex item) prirodno zauzima **CELU širinu viewport-a** (0 do 1920px), a `lg:pl-60` samo vizuelno pomera sadržaj (padding), ne i stvarnu širinu/hitbox diva. Kako su i `<aside>` (fixed) i content-div (relative) "positioned" elementi sa `z-index: auto`, CSS stacking pravilo kaže: **kasniji u DOM redosledu pobeđuje** kada je z-index auto na oba — pa je content-div (providan u toj zoni, pa se sidebar VIDI ispod) ipak HVATAO sve klikove u levih 240px, iako se sidebar linkovi vizuelno tu nalaze.
+
+**Dijagnoza:** Potvrđeno preko `document.elementFromPoint(x, y)` na koordinatama "Tasks" linka — vraćao je content-div, ne `<a>` link (`isSameAsLink: false`).
+
+**Fix:** Dodat `lg:left-0 lg:z-20` na `<aside>` (`resources/views/layouts/app.blade.php`) — sada eksplicitan z-index sidebar-a definitivno pobeđuje nezavisno od DOM redosleda. Potvrđeno: `elementFromPoint` sada pogađa pravi link, i svi nav linkovi (Dashboard/Tasks/Tutorial/Admin) + user dropdown rade na **prvi klik**.
+
+**Retroaktivno objašnjenje:** Ovo objašnjava zašto su tokom CELE prethodne sesije (redizajn, snimanje GIF-ova) klikovi na sidebar linkove često "promašivali" i trebalo je kliknuti dvaput ili koristiti direktnu `navigate()` umesto klika — nije bio artefakt automatizacije, bio je pravi bag koji je automatizacija (nasumično) povremeno "preživljavala" zavisno od tačne pozicije klika u okviru te 240px zone.
+
+**Pouka za ubuduće:** Kad se `position: relative`/`absolute` doda na kontejner SAMO radi pozicioniranja dekorativnog elementa (npr. blob pozadina), obavezno proveriti da li taj kontejner sad "krade" stacking prioritet od susednih positioned elemenata (fixed sidebar, modali, dropdown-ovi) — dodati eksplicitan `z-index` na oba da se izbegne oslanjanje na DOM-redosled tie-breaking.
+
+## Tutorial stranica sa GIF-ovima (2026-09-16)
+
+Korisnik je pitao da li mogu da snimam GIF-ove dok klikćem po sajtu (koristeći `mcp__claude-in-chrome__gif_creator`), pa je tražio da se doda stavka "Tutorial" u meni sa GIF-ovima za svaku funkcionalnost.
+
+- Snimljeno 7 GIF-ova kroz `gif_creator` (start_recording → akcije → stop_recording → export sa `download: true`): login, pregled taskova, kreiranje, izmena, brisanje, promena jezika, admin dashboard. Fajlovi se preuzimaju u Windows Downloads folder (`$env:USERPROFILE\Downloads`), otuda kopirani u `public/tutorial-clips/` preko PowerShell-a (i očišćeni `:Zone.Identifier` ADS fajlovi koje Windows dodaje preuzetim fajlovima).
+- **Nativni `confirm()` dijalog kod brisanja taska** (`onsubmit="return confirm(...)"`) ne sme da se okine kroz browser automatizaciju (blokira ekstenziju) — zaobiđeno privremenim `window.confirm = () => true` preko `javascript_exec` pre snimanja te akcije, umesto klikanja kroz pravi dijalog.
+- Prirodni HTML `<select>` dropdown (Status/Priority) se ne otvara/bira klikom pouzdano u CDP automatizaciji (browser-native popup, van DOM-a koji Chrome DevTools Protocol može da klikne) — koristi se tastatura (`Down`/`Return`) umesto klika na `<option>`.
+- **⚠️ Bag koji je otkriven i ispravljen**: ruta `/tutorial` se u početku sudarala sa `public/tutorial/` direktorijumom — nginx u Sail kontejneru je pokušavao da posluži folder direktno (`try_files $uri $uri/ ...`) pre nego što zahtev stigne do Laravel-a, vraćajući sirovi "404 Not Found" (ne Laravel-ovu 404 stranicu). Rešeno preimenovanjem foldera u `public/tutorial-clips/`. **Ubuduće: nikad ne nazivati javni asset folder istim imenom kao neku rutu.**
+- Ruta `GET /tutorial` (auth-gated) u `routes/web.php`, priprema niz `$videos` (file/title/description, sve kroz `__()`) i prosleđuje `tutorial.index` view-u
+- View `resources/views/tutorial/index.blade.php` — grid kartica (dark stil, isti kao ostatak app-a), svaka sa GIF-om, naslovom i kratkim opisom
+- Nav link "Tutorial" dodat u sidebar (ikonica play-dugme) između "Tasks" i "Admin"
+- Svi novi stringovi prevedeni u `lang/sr.json`
+- Test: `tests/Feature/TutorialTest.php` (guest redirect, autentifikovan korisnik vidi sadržaj) — svih **69 testova** prolazi
+- `public/tutorial-clips/` dodaje ~12MB binarnih GIF fajlova u repo — prihvatljivo za ličan/learning projekat, ali vredi imati na umu ako repo naraste
+
 ## Redizajn v2 — tamna "Linear/Todoist-inspired" tema (2026-09-16)
 
 Korisnik je i dalje smatrao dizajn "tankim" nakon prvog redizajna (indigo/violet sidebar SaaS). Otvorio sam **linear.app** i **todoist.com** u Chrome-u kao referencu (samo za vizuelnu inspiraciju — kod nije kopiran, samo obrasci: razmak, tipografija, boje). Napravljeno je više mockup krugova (`public/design-preview-v2.html`, `v3.html`, obrisani nakon odabira) pre nego što je korisnik odobrio finalnu varijantu.
@@ -69,7 +98,7 @@ Traženo kao među-task: app treba da bude dvojezična (engleski/srpski), i seed
 ```bash
 vendor/bin/sail up -d                              # pokreni kontejnere
 vendor/bin/sail artisan migrate:fresh --seed        # reset baze + seed
-vendor/bin/sail artisan test --compact              # 67 testa
+vendor/bin/sail artisan test --compact              # 69 testa
 vendor/bin/sail bin pint --format agent             # formatiranje
 vendor/bin/sail npm run build                       # build frontend assets (Tailwind v4)
 vendor/bin/sail npm run dev                         # dev watch (za rad na frontend-u)
@@ -83,6 +112,7 @@ vendor/bin/sail npm run dev                         # dev watch (za rad na front
 - Admin dashboard (`/admin/dashboard`) — statistike + pregled svih korisnika/taskova
 - Tamna, Linear/Todoist-inspirisana tema — sidebar, grid+glow+blob pozadina, indigo/violet brand ("Taskly")
 - Dvojezičan interfejs (EN/SR) sa switcher-om, realni bilingual seed taskovi
+- Tutorial stranica (`/tutorial`) sa GIF snimcima svake funkcionalnosti
 
 **Šta NE postoji još:** Livewire/Inertia/API/Filament varijante (Faza 8), email verifikacija (ruta postoji ali `User` ne implementira `MustVerifyEmail`), dark mode, Kanban prikaz taskova, mobilni prikaz sidebar-a nije vizuelno proveren (videti napomenu u sekciji redizajna).
 

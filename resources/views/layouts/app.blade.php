@@ -17,7 +17,7 @@
     <body class="font-sans antialiased bg-app-grid text-zinc-200" x-data="{ sidebarOpen: false }">
         <div class="min-h-screen lg:flex">
             <!-- Desktop sidebar -->
-            <aside class="hidden lg:flex lg:flex-col lg:w-60 lg:fixed lg:inset-y-0 bg-black/20 border-r border-white/[0.06] px-3 py-3">
+            <aside class="hidden lg:flex lg:flex-col lg:w-60 lg:fixed lg:inset-y-0 lg:left-0 lg:z-20 bg-black/20 border-r border-white/[0.06] px-3 py-3">
                 @include('layouts.partials.sidebar-nav')
             </aside>
 
