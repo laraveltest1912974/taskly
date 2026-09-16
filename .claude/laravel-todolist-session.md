@@ -4,7 +4,15 @@ Cilj: učenje Laravela kroz izradu ToDo List aplikacije na razne načine (Blade,
 
 > **Status: PAUZIRANO nakon Faze 7 + redizajna frontend-a.** Faze 0–7 su odrađene i testirane. Faza 8 (Livewire/Inertia/API/Filament varijante) nije počela. Ova beleška služi kao referenca za pitanja o dosad urađenom — sekcije ispod prate hronologiju rada, "Brzi pregled" ispod je sažetak za brzo pretraživanje.
 
-## 🐛 KRITIČAN BAG — sidebar nav nije primao klikove (2026-09-16, nakon dark redizajna)
+## 🐛 Bag #2 — Log Out (dropdown meni) nije radio (2026-09-16, posledica fix-a bag-a #1)
+
+Odmah posle fix-a sidebar bag-a, korisnik je prijavio da "Log Out" ne radi. Uzrok: `<main>` element je imao `relative z-10` — **isti z-index kao `<header>`** koji sadrži dropdown meni. Pošto `main` dolazi POSLE `header`-a u DOM-u, a oba imaju eksplicitan (jednak) z-index, `main`-ov sadržaj (npr. ljubičasta "Welcome back" kartica na dashboard-u) je pobeđivao u stacking redosledu i **fizički prekrivao donji deo otvorenog dropdown menija** (uključujući "Log Out" link) — potvrđeno screenshot-om, dropdown se video samo delimično, "Log Out" je bio ispod banner kartice.
+
+**Fix:** Uklonjen `relative z-10` sa `<main>` u `resources/views/layouts/app.blade.php` — nije ni bio potreban (main-ov sadržaj se svakako DOM-redom prirodno renderuje iznad blob pozadine bez eksplicitnog z-indeksa). Sad header (i njegov dropdown) definitivno pobeđuje nad main sadržajem. Potvrđeno u browseru: dropdown se u potpunosti vidi, klik na "Log Out" ispravno odjavljuje i vraća na `/login`.
+
+**Pouka:** Kad dodaješ `z-index` nekom elementu da rešiš jedan stacking problem, obavezno proveriti SVE susedne/nadređene elemente sa istim ili sličnim z-indeksom — lako se napravi novi konflikt na drugom mestu. Ovde su i `header` i `main` imali isti `z-10` "za svaki slučaj" bez stvarne potrebe (nijedan od njih se prirodno ne sudara sa blob pozadinom bez toga).
+
+## 🐛 Bag #1 — sidebar nav nije primao klikove (2026-09-16, nakon dark redizajna)
 
 Korisnik je prijavio: "Ne mogu da klikćem po navigaciji i drugim delovima sajta." Ovo je bio pravi bag u produkcionom kodu (ne artefakt automatizacije), prisutan otkad je dark tema uvedena.
 
