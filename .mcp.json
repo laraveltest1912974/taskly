@@ -1,0 +1,15 @@
+{
+    "mcpServers": {
+        "laravel-boost": {
+            "command": "wsl.exe",
+            "args": [
+                "-d",
+                "Ubuntu",
+                "--",
+                "bash",
+                "-lc",
+                "cd ~/projects/todolist && vendor/bin/sail artisan boost:mcp"
+            ]
+        }
+    }
+}
