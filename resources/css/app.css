@@ -3,7 +3,7 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 
 @theme {
-    --font-sans: 'Figtree', 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
 
     --color-brand-50: oklch(0.97 0.014 280);
     --color-brand-100: oklch(0.93 0.03 280);
@@ -19,4 +19,28 @@
 
 [x-cloak] {
     display: none !important;
+}
+
+.bg-app-grid {
+    background-color: #0a0a0d;
+    background-image:
+        radial-gradient(1200px 500px at 50% -10%, rgba(124, 58, 237, 0.25), transparent 60%),
+        linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    background-size:
+        auto,
+        32px 32px,
+        32px 32px;
+}
+
+.bg-blob {
+    position: absolute;
+    top: 55%;
+    left: 68%;
+    transform: translate(-50%, -50%);
+    width: 460px;
+    height: 460px;
+    opacity: 0.22;
+    filter: blur(60px);
+    pointer-events: none;
 }

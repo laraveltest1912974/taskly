@@ -1,19 +1,19 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-bold text-xl text-slate-900">
+        <h2 class="text-[13px] font-medium text-zinc-200">
             {{ __('New Task') }}
         </h2>
     </x-slot>
 
     <div class="max-w-2xl">
-        <div class="bg-white rounded-2xl shadow-lg shadow-slate-300/40 ring-1 ring-slate-900/5 p-6 sm:p-8">
+        <div class="bg-zinc-950/40 backdrop-blur-md ring-1 ring-white/[0.08] rounded-xl p-6 sm:p-8">
             <form method="POST" action="{{ route('tasks.store') }}">
                 @csrf
 
                 @include('tasks._form', ['task' => null, 'statuses' => $statuses, 'priorities' => $priorities])
 
-                <div class="flex items-center justify-end gap-4 mt-8 pt-6 border-t border-slate-100">
-                    <a href="{{ route('tasks.index') }}" class="text-sm font-medium text-slate-500 hover:text-slate-800">
+                <div class="flex items-center justify-end gap-4 mt-8 pt-6 border-t border-white/[0.06]">
+                    <a href="{{ route('tasks.index') }}" class="text-[13px] font-medium text-zinc-400 hover:text-zinc-200">
                         {{ __('Cancel') }}
                     </a>
                     <x-primary-button>{{ __('Create Task') }}</x-primary-button>

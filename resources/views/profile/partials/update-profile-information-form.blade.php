@@ -1,10 +1,10 @@
-﻿<section>
+<section>
     <header>
-        <h2 class="text-lg font-medium text-slate-900">
+        <h2 class="text-[15px] font-semibold text-zinc-100">
             {{ __('Profile Information') }}
         </h2>
 
-        <p class="mt-1 text-sm text-slate-600">
+        <p class="mt-1 text-[13px] text-zinc-500">
             {{ __("Update your account's profile information and email address.") }}
         </p>
     </header>
@@ -30,16 +30,16 @@
 
             @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
                 <div>
-                    <p class="text-sm mt-2 text-slate-800">
+                    <p class="text-[13px] mt-2 text-zinc-300">
                         {{ __('Your email address is unverified.') }}
 
-                        <button form="send-verification" class="underline text-sm text-slate-600 hover:text-slate-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500">
+                        <button form="send-verification" class="underline text-[13px] text-zinc-400 hover:text-zinc-200 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-950 focus:ring-brand-500">
                             {{ __('Click here to re-send the verification email.') }}
                         </button>
                     </p>
 
                     @if (session('status') === 'verification-link-sent')
-                        <p class="mt-2 font-medium text-sm text-green-600">
+                        <p class="mt-2 font-medium text-[13px] text-emerald-400">
                             {{ __('A new verification link has been sent to your email address.') }}
                         </p>
                     @endif
@@ -56,7 +56,7 @@
                     x-show="show"
                     x-transition
                     x-init="setTimeout(() => show = false, 2000)"
-                    class="text-sm text-slate-600"
+                    class="text-[13px] text-zinc-500"
                 >{{ __('Saved.') }}</p>
             @endif
         </div>

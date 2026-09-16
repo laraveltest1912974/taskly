@@ -27,21 +27,21 @@
         <!-- Remember Me -->
         <div class="block mt-4">
             <label for="remember_me" class="inline-flex items-center">
-                <input id="remember_me" type="checkbox" class="rounded border-slate-300 text-brand-600 shadow-sm focus:ring-brand-500" name="remember">
-                <span class="ms-2 text-sm text-slate-600">{{ __('Remember me') }}</span>
+                <input id="remember_me" type="checkbox" class="rounded border-white/20 bg-white/[0.04] text-brand-600 focus:ring-brand-500 focus:ring-offset-zinc-950" name="remember">
+                <span class="ms-2 text-[13px] text-zinc-400">{{ __('Remember me') }}</span>
             </label>
         </div>
 
         <div class="flex items-center justify-between mt-4">
             @if (Route::has('register'))
-                <a class="underline text-sm text-slate-600 hover:text-slate-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500" href="{{ route('register') }}">
+                <a class="underline text-[13px] text-zinc-400 hover:text-zinc-200 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-950 focus:ring-brand-500" href="{{ route('register') }}">
                     {{ __("Don't have an account?") }}
                 </a>
             @endif
 
             <div class="flex items-center">
                 @if (Route::has('password.request'))
-                    <a class="underline text-sm text-slate-600 hover:text-slate-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500" href="{{ route('password.request') }}">
+                    <a class="underline text-[13px] text-zinc-400 hover:text-zinc-200 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-950 focus:ring-brand-500" href="{{ route('password.request') }}">
                         {{ __('Forgot your password?') }}
                     </a>
                 @endif

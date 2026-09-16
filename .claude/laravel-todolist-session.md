@@ -4,6 +4,28 @@ Cilj: učenje Laravela kroz izradu ToDo List aplikacije na razne načine (Blade,
 
 > **Status: PAUZIRANO nakon Faze 7 + redizajna frontend-a.** Faze 0–7 su odrađene i testirane. Faza 8 (Livewire/Inertia/API/Filament varijante) nije počela. Ova beleška služi kao referenca za pitanja o dosad urađenom — sekcije ispod prate hronologiju rada, "Brzi pregled" ispod je sažetak za brzo pretraživanje.
 
+## Redizajn v2 — tamna "Linear/Todoist-inspired" tema (2026-09-16)
+
+Korisnik je i dalje smatrao dizajn "tankim" nakon prvog redizajna (indigo/violet sidebar SaaS). Otvorio sam **linear.app** i **todoist.com** u Chrome-u kao referencu (samo za vizuelnu inspiraciju — kod nije kopiran, samo obrasci: razmak, tipografija, boje). Napravljeno je više mockup krugova (`public/design-preview-v2.html`, `v3.html`, obrisani nakon odabira) pre nego što je korisnik odobrio finalnu varijantu.
+
+**Odabran pravac:** potpuno tamna tema (ne light/dark toggle — samo tamna, dark mode toggle nikad nije implementiran niti tražen), inspirisana Linear-ovim ultra-minimalnim sidebar-om (sitne ikonice, `13px`/`11px` tekst, tanke `border-white/[0.06]` linije umesto senki) + Todoist-ovim kružnim checkbox-ovima obojenim po prioritetu. Dodatak na zahtev korisnika: suptilna pozadina sa `grid` + `radial-gradient glow` + **apstraktna SVG blob grafika** (organski oblik, ljubičasto-plavo-roze gradijent, jako zamagljen `blur(60px)`, `opacity: 0.22`) — generisano čisto kroz SVG/CSS, bez eksternih slika (nisam mogao da povlačim prave slike sa interneta bez linka od korisnika).
+
+### Šta je izmenjeno
+- `resources/css/app.css` — font promenjen sa Figtree na **Inter** (i dalje kroz Bunny Fonts, privacy-friendly), dodate `.bg-app-grid` (tamna pozadina + grid + glow) i `.bg-blob` (pozicioniranje/blur za SVG blob) utility klase
+- **Svi layout/komponente fajlovi** prešli na tamnu paletu (`zinc-950/40` prozirne kartice sa `backdrop-blur-md`, `ring-1 ring-white/[0.08]` umesto `shadow-lg`): `layouts/app.blade.php`, `layouts/guest.blade.php`, `layouts/partials/sidebar-nav.blade.php`, `components/{sidebar-link,status-badge,dropdown,dropdown-link,locale-switcher,text-input,input-label,input-error,primary-button,secondary-button,danger-button,auth-session-status,modal}.blade.php`
+- **Task lista redizajnirana**: kružni checkbox indikatori obojeni po prioritetu (`border-red-400` = High, `border-orange-400` = Medium, `border-zinc-600` = Low) umesto teksta/badge-a za prioritet — `x-priority-badge` komponenta **obrisana** (postala nepotrebna). Završeni **i** otkazani taskovi sad oba dobijaju `opacity-60` + `line-through` (ranije samo Completed)
+- Sve stranice: `tasks/{index,create,edit,_form}`, `dashboard`, `admin/dashboard`, `auth/*` (login/register/forgot-password/reset-password/confirm-password/verify-email), `profile/edit` + 3 partial-a
+- **Uklonjen mrtav kod**: `components/{nav-link,responsive-nav-link,application-logo}.blade.php` — otkriveno da su ostali neiskorišćeni od PRVOG redizajna (zamenjeni sidebar-om), niko ih ranije nije očistio
+- Dugmad (primary/secondary/danger) redizajnirana sa uppercase+tracking-widest stila na kompaktniji `text-[13px] font-medium` (bez uppercase) — usklađeno sa rafinisanijom Linear-like estetikom
+- `focus:ring-offset-zinc-950` dodat svuda gde je bio `focus:ring-offset-2` (default ring-offset-color je belo, pravilo bi ostavljalo beli "halo" oko dugmadi na tamnoj pozadini)
+- Date input dobio `[color-scheme:dark]` da bi nativni kalendar picker ikonica bila vidljiva na tamnoj pozadini
+
+### Napomene za buduće izmene
+- **PowerShell encoding**: `Get-Content`/`Set-Content` u Windows PowerShell 5.1 i dalje kvare UTF-8 karaktere (npr. em dash) čak i uz `-Encoding utf8`. Za bulk find-replace preko više fajlova koristiti `[System.IO.File]::ReadAllText/WriteAllText` sa eksplicitnim `[System.Text.UTF8Encoding]::new($false)` (bez BOM-a) — to je proradilo čisto.
+- Lančani `.Replace()` pozivi u istom PowerShell bloku mogu da se "pojedu" međusobno ako drugi replace traži tekst koji je prvi replace već izmenio (redosled bitan) — proveriti rezultat posle bulk operacija, ne pretpostaviti da je sve pogođeno.
+- Pagination view (`$tasks->links()`) i dalje koristi Laravel-ov default Tailwind stil (svetla tema) — nije primetno jer trenutni seed ima <15 taskova po stranici pa se paginacija ne renderuje. **Ako broj taskova preko 15, treba stilizovati/publish-ovati custom pagination view za tamnu temu.**
+- Svih 67 testova prolazi, Pint čist, build (`npm run build`) prošao. Vizuelno potvrđeno u browseru: login/register (EN+SR), dashboard, tasks lista/forma/kreiranje, admin dashboard, profile (uklj. delete account modal) — sve kao ulogovan `test@example.com` i `admin@example.com`.
+
 ## Git i GitHub — odrađeno (2026-09-16)
 
 - `git init -b main` u `~/projects/todolist`, inicijalni commit (174 fajla) — provereno pre commit-a da `.env`, `vendor/`, `node_modules/`, `.idea/` i sl. nisu uključeni (`.gitignore` je već bio ispravan iz Laravel starter kit-a)
@@ -59,7 +81,7 @@ vendor/bin/sail npm run dev                         # dev watch (za rad na front
 - Registracija/login/reset lozinke/profil (Breeze)
 - CRUD nad zadacima (`/tasks`) sa poljima title/description/due_date/status/priority, vlasništvo po korisniku
 - Admin dashboard (`/admin/dashboard`) — statistike + pregled svih korisnika/taskova
-- Moderan sidebar UI (indigo/violet brand, "Taskly")
+- Tamna, Linear/Todoist-inspirisana tema — sidebar, grid+glow+blob pozadina, indigo/violet brand ("Taskly")
 - Dvojezičan interfejs (EN/SR) sa switcher-om, realni bilingual seed taskovi
 
 **Šta NE postoji još:** Livewire/Inertia/API/Filament varijante (Faza 8), email verifikacija (ruta postoji ali `User` ne implementira `MustVerifyEmail`), dark mode, Kanban prikaz taskova, mobilni prikaz sidebar-a nije vizuelno proveren (videti napomenu u sekciji redizajna).
