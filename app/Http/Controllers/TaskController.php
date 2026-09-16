@@ -47,7 +47,7 @@ class TaskController extends Controller
     {
         $request->user()->tasks()->create($request->validated());
 
-        return redirect()->route('tasks.index')->with('status', 'Task created.');
+        return redirect()->route('tasks.index')->with('status', __('Task created.'));
     }
 
     /**
@@ -71,7 +71,7 @@ class TaskController extends Controller
     {
         $task->update($request->validated());
 
-        return redirect()->route('tasks.index')->with('status', 'Task updated.');
+        return redirect()->route('tasks.index')->with('status', __('Task updated.'));
     }
 
     /**
@@ -82,6 +82,6 @@ class TaskController extends Controller
     {
         $task->delete();
 
-        return redirect()->route('tasks.index')->with('status', 'Task deleted.');
+        return redirect()->route('tasks.index')->with('status', __('Task deleted.'));
     }
 }

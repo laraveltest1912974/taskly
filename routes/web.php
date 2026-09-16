@@ -11,6 +11,14 @@ Route::get('/', function () {
     return redirect()->route(Auth::check() ? 'dashboard' : 'login');
 });
 
+Route::get('/locale/{locale}', function (string $locale) {
+    abort_unless(array_key_exists($locale, config('app.supported_locales')), 404);
+
+    session(['locale' => $locale]);
+
+    return back();
+})->name('locale.switch');
+
 Route::get('/dashboard', function () {
     $user = Auth::user();
 

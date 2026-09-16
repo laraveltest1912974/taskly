@@ -9,5 +9,5 @@ $classes = match ($priority) {
 @endphp
 
 <span {{ $attributes->merge(['class' => "inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap $classes"]) }}>
-    {{ ucfirst($priority->value) }}
+    {{ $priority->label() }}
 </span>

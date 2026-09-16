@@ -51,6 +51,8 @@
                         @endisset
                     </div>
 
+                    <x-locale-switcher />
+
                     <x-dropdown align="right" width="48">
                         <x-slot name="trigger">
                             <button class="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 focus:outline-none">

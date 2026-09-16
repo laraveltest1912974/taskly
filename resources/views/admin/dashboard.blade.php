@@ -17,7 +17,7 @@
             </div>
             @foreach (App\TaskStatus::cases() as $status)
                 <div class="bg-white rounded-2xl shadow-lg shadow-slate-300/40 ring-1 ring-slate-900/5 p-5">
-                    <div class="text-sm text-slate-500">{{ ucfirst(str_replace('_', ' ', $status->value)) }}</div>
+                    <div class="text-sm text-slate-500">{{ $status->label() }}</div>
                     <div class="text-2xl font-bold text-slate-900 mt-1">{{ $tasksByStatus->get($status->value, 0) }}</div>
                 </div>
             @endforeach
@@ -43,7 +43,7 @@
                             <td class="px-6 py-3.5 whitespace-nowrap text-sm text-slate-500">{{ $user->email }}</td>
                             <td class="px-6 py-3.5 whitespace-nowrap">
                                 <span class="inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full {{ $user->isAdmin() ? 'bg-brand-100 text-brand-700' : 'bg-slate-100 text-slate-500' }}">
-                                    {{ ucfirst($user->role->value) }}
+                                    {{ $user->role->label() }}
                                 </span>
                             </td>
                             <td class="px-6 py-3.5 whitespace-nowrap text-sm text-slate-500">{{ $user->tasks_count }}</td>

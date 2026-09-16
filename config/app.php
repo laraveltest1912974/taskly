@@ -86,6 +86,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Supported Locales
+    |--------------------------------------------------------------------------
+    |
+    | The locales the application's language switcher offers, keyed by their
+    | locale code and mapped to the label shown in the UI.
+    |
+    */
+
+    'supported_locales' => [
+        'en' => 'English',
+        'sr' => 'Srpski',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Encryption Key
     |--------------------------------------------------------------------------
     |

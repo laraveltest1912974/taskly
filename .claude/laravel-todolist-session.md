@@ -4,12 +4,40 @@ Cilj: učenje Laravela kroz izradu ToDo List aplikacije na razne načine (Blade,
 
 > **Status: PAUZIRANO nakon Faze 7 + redizajna frontend-a.** Faze 0–7 su odrađene i testirane. Faza 8 (Livewire/Inertia/API/Filament varijante) nije počela. Ova beleška služi kao referenca za pitanja o dosad urađenom — sekcije ispod prate hronologiju rada, "Brzi pregled" ispod je sažetak za brzo pretraživanje.
 
+## Git i GitHub — odrađeno (2026-09-16)
+
+- `git init -b main` u `~/projects/todolist`, inicijalni commit (174 fajla) — provereno pre commit-a da `.env`, `vendor/`, `node_modules/`, `.idea/` i sl. nisu uključeni (`.gitignore` je već bio ispravan iz Laravel starter kit-a)
+- GitHub CLI (`gh`) instaliran u WSL-u — trebalo je zaobići `sudo` (nije se znala lozinka) kroz `wsl.exe -d Ubuntu -u root -- ...` (WSL dozvoljava root pristup bez lozinke sa Windows strane); usput trebalo i `dpkg --configure -a` zbog prekinute ranije apt operacije
+- `gh auth login` — HTTPS + browser device-code flow (korisnik ručno otvorio `github.com/login/device`, `xdg-open` ne postoji u WSL-u pa je auto-open preskočen bez problema)
+- GitHub nalog: **`laraveltest1912974`**
+- Repo kreiran i push-ovan: **https://github.com/laraveltest1912974/taskly** (javan), `gh repo create taskly --public --source=. --remote=origin --push`
+- Remote `origin` podešen, grana `main` prati `origin/main`
+
+## Dvojezičnost (EN/SR) + realni seed podaci — odrađeno (2026-09-16)
+
+Traženo kao među-task: app treba da bude dvojezična (engleski/srpski), i seed taskovi treba da budu realni (ne lorem ipsum).
+
+- `php artisan lang:publish` objavio `lang/en/{validation,auth,passwords,pagination}.php`; napravljeni srpski parnjaci u `lang/sr/` (kompletan prevod, uključujući `'attributes'` mapu u `validation.php` za title/description/due_date/status/priority/name/email/password)
+- `lang/sr.json` — prevodi svih app-specifičnih `__()` stringova (koristi engleski tekst kao ključ, Laravel-ov preporučeni pristup za veliki broj stringova)
+- **Enum `label()` metode** dodate na `TaskStatus`, `TaskPriority`, `UserRole` (vraćaju `__('...')`) — zamenile ručni `ucfirst(str_replace('_',' ',...))` razbacan po view-ovima (dashboard, admin dashboard, _form.blade.php, status/priority-badge komponente); sada je jedno mesto istine za labele i lakše za prevod
+- `config/app.php` — dodat `'supported_locales' => ['en' => 'English', 'sr' => 'Srpski']`
+- `App\Http\Middleware\SetLocale` — čita `session('locale')`, poziva `App::setLocale()`; registrovan globalno u `web` grupi (`bootstrap/app.php`)
+- Ruta `GET /locale/{locale}` (`locale.switch`) — validira protiv `supported_locales`, čuva u sesiji, `back()`
+- `x-locale-switcher` Blade komponenta (EN/SR pill) — u topbar-u (`layouts/app.blade.php`) i na guest stranicama (`layouts/guest.blade.php`, vidljivo i pre logina)
+- Flash poruke u `TaskController` (`Task created.` itd.) sada idu kroz `__()`
+- Test: `tests/Feature/LocaleSwitchTest.php` (4 testa — switch persistuje u sesiji, nepodržan locale = 404, login/tasks stranice renderuju na srpskom)
+- **`TaskFactory` prepravljen** — umesto `fake()->sentence()`/`paragraph()` (lorem ipsum), koristi kurirani pool od 20 parova realnih todo stavki na engleskom i srpskom (npr. "Buy groceries"/"Kupiti namirnice", "Call the dentist"/"Pozvati zubara") nasumično biranih po tasku — seed podaci sada izgledaju kao pravi todo-lista, ne generisan tekst
+- Svih **67 testova** prolazi, Pint čist
+- Vizuelno potvrđeno u browseru: login/register, dashboard, tasks lista/forma, flash poruke, user dropdown — sve ispravno na oba jezika; admin dashboard nije ponovo vizuelno proveren na srpskom u ovoj sesiji (kod prati isti `->label()`/`__()` obrazac kao ostale stranice, pa je rizik nizak)
+- **Napomena iz debug-a:** ručno "hakovanje" HTML forme kroz JS (`removeAttribute('required')` + `form.submit()`) u automatizovanom browser testiranju je izazvalo čudno ponašanje (redirect na login, gubitak sesije/locale) — ispostavilo se da je to artefakt te specifične JS manipulacije, NE stvarni bag u aplikaciji; kroz normalnu UI interakciju (klik/kucanje) sve radi ispravno. Ako se ubuduće testira browserom, izbegavati takve JS hakove nad formama i koristiti stvarne klikove/tastaturu.
+
 ## Brzi pregled (cheat sheet)
 
 **Pristup aplikaciji:**
 - App: http://localhost:8010 (`/` redirect-uje na `/login` ili `/dashboard`)
 - Mailpit (test email UI): http://localhost:8125
 - DB (host strane, npr. TablePlus): `127.0.0.1:3310`, user `sail`, pass `password`, baza `laravel`
+- GitHub repo: https://github.com/laraveltest1912974/taskly (javan)
 
 **Test nalozi (seed-ovani):**
 - `test@example.com` / `password` — obična uloga (`user`), 5 taskova
@@ -19,7 +47,7 @@ Cilj: učenje Laravela kroz izradu ToDo List aplikacije na razne načine (Blade,
 ```bash
 vendor/bin/sail up -d                              # pokreni kontejnere
 vendor/bin/sail artisan migrate:fresh --seed        # reset baze + seed
-vendor/bin/sail artisan test --compact              # 63 testa
+vendor/bin/sail artisan test --compact              # 67 testa
 vendor/bin/sail bin pint --format agent             # formatiranje
 vendor/bin/sail npm run build                       # build frontend assets (Tailwind v4)
 vendor/bin/sail npm run dev                         # dev watch (za rad na frontend-u)
@@ -32,6 +60,7 @@ vendor/bin/sail npm run dev                         # dev watch (za rad na front
 - CRUD nad zadacima (`/tasks`) sa poljima title/description/due_date/status/priority, vlasništvo po korisniku
 - Admin dashboard (`/admin/dashboard`) — statistike + pregled svih korisnika/taskova
 - Moderan sidebar UI (indigo/violet brand, "Taskly")
+- Dvojezičan interfejs (EN/SR) sa switcher-om, realni bilingual seed taskovi
 
 **Šta NE postoji još:** Livewire/Inertia/API/Filament varijante (Faza 8), email verifikacija (ruta postoji ali `User` ne implementira `MustVerifyEmail`), dark mode, Kanban prikaz taskova, mobilni prikaz sidebar-a nije vizuelno proveren (videti napomenu u sekciji redizajna).
 

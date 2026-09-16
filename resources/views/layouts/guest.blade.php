@@ -16,6 +16,8 @@
     </head>
     <body class="font-sans text-slate-900 antialiased">
         <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-slate-100">
+            <x-locale-switcher class="mb-4" />
+
             <div class="flex items-center gap-2">
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold shadow-lg shadow-brand-600/30">
                     T
