@@ -4,6 +4,17 @@ Cilj: učenje Laravela kroz izradu ToDo List aplikacije na razne načine (Blade,
 
 > **Status: PAUZIRANO nakon Faze 7 + redizajna frontend-a.** Faze 0–7 su odrađene i testirane. Faza 8 (Livewire/Inertia/API/Filament varijante) nije počela. Ova beleška služi kao referenca za pitanja o dosad urađenom — sekcije ispod prate hronologiju rada, "Brzi pregled" ispod je sažetak za brzo pretraživanje.
 
+## Lightbox za Tutorial GIF-ove (2026-09-16)
+
+Korisnik je pitao "Postoji li opcija da se klikom na gifove oni uvelicaju?" — dodat click-to-enlarge lightbox u `resources/views/tutorial/index.blade.php`.
+
+- Svaka GIF kartica je sad `<button>` sa hover overlay-om ("Enlarge" / "Uvećaj" natpis) koji na klik postavlja Alpine `open = '<filename>'`.
+- Lightbox je fullscreen `fixed inset-0 z-50` overlay sa `x-show="open"`, zatvara se klikom van slike ili na Escape (`@keydown.escape.window`), prikazuje uvećan GIF + naslov + opis preko `current` Alpine getter-a (`videos.find(v => v.file === open)`).
+- `videos` niz se prosleđuje iz PHP-a u Alpine preko `@js($videos)` Blade direktive (bezbedno serijalizuje PHP array u JS).
+- Korisnik je zatim pitao da li je to "definitivna velicina" i tražio da se GIF-ovi uvećaju duplo na ekranu kad se klikne — lightbox kontejner promenjen sa `max-w-4xl` (896px) na `max-w-[112rem]` (1792px, tačno duplo), blizu native rezolucije GIF-ova (1568×698px), pa se sada prikazuju skoro u punoj veličini.
+- Verifikovano u browseru: klik na GIF karticu otvara lightbox primetno veći nego pre; svih 7 GIF-ova (uključujući "Create a Task" koji je jednom izgledao prazan na screenshot-u — ispostavilo se da je to bio samo privremeni render/paint-timing artefakt, JS provera `img.complete/naturalWidth/naturalHeight` je pokazala da je slika ispravno učitana) prikazuje se ispravno.
+- Testovi (69) i dalje prolaze, Pint čist. Commit `10c8737`, pushovan na GitHub.
+
 ## 🐛 Bag #2 — Log Out (dropdown meni) nije radio (2026-09-16, posledica fix-a bag-a #1)
 
 Odmah posle fix-a sidebar bag-a, korisnik je prijavio da "Log Out" ne radi. Uzrok: `<main>` element je imao `relative z-10` — **isti z-index kao `<header>`** koji sadrži dropdown meni. Pošto `main` dolazi POSLE `header`-a u DOM-u, a oba imaju eksplicitan (jednak) z-index, `main`-ov sadržaj (npr. ljubičasta "Welcome back" kartica na dashboard-u) je pobeđivao u stacking redosledu i **fizički prekrivao donji deo otvorenog dropdown menija** (uključujući "Log Out" link) — potvrđeno screenshot-om, dropdown se video samo delimično, "Log Out" je bio ispod banner kartice.
