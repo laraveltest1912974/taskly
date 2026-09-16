@@ -18,6 +18,14 @@
         {{ __('Tasks') }}
     </x-sidebar-link>
 
+    <x-sidebar-link :href="route('tutorial')" :active="request()->routeIs('tutorial')">
+        <svg class="w-[15px] h-[15px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 8.5l6 3.5-6 3.5v-7z" />
+        </svg>
+        {{ __('Tutorial') }}
+    </x-sidebar-link>
+
     @if (Auth::user()->isAdmin())
         <x-sidebar-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.*')">
             <svg class="w-[15px] h-[15px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
