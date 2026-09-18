@@ -204,7 +204,7 @@ Traženo kao među-task: app treba da bude dvojezična (engleski/srpski), i seed
 ```bash
 vendor/bin/sail up -d                              # pokreni kontejnere
 vendor/bin/sail artisan migrate:fresh --seed        # reset baze + seed
-vendor/bin/sail artisan test --compact              # 77 testova
+vendor/bin/sail artisan test --compact              # 86 testova
 vendor/bin/sail bin pint --format agent             # formatiranje
 vendor/bin/sail npm run build                       # build frontend assets (Tailwind v4)
 vendor/bin/sail npm run dev                         # dev watch (za rad na frontend-u)
@@ -214,14 +214,15 @@ vendor/bin/sail npm run dev                         # dev watch (za rad na front
 
 **Šta postoji funkcionalno:**
 - Registracija/login/reset lozinke/profil (Breeze)
-- Login preko Googlea i Facebooka (Socialite; čeka kredencijale u `.env`)
+- Login preko Googlea i Facebooka (Socialite; kredencijali su u `.env` lokalno i u Render env varijablama)
+- Live na https://taskly-olux.onrender.com (Render Free + TiDB Cloud), PWA (manifest, service worker, offline stranica), javna stranica `/privacy`
 - CRUD nad zadacima (`/tasks`) sa poljima title/description/due_date/status/priority, vlasništvo po korisniku
 - Admin dashboard (`/admin/dashboard`) — statistike + pregled svih korisnika/taskova
 - Tamna, Linear/Todoist-inspirisana tema — sidebar, grid+glow+blob pozadina, indigo/violet brand ("Taskly")
 - Dvojezičan interfejs (EN/SR) sa switcher-om, realni bilingual seed taskovi
 - Tutorial stranica (`/tutorial`) sa GIF snimcima svake funkcionalnosti
 
-**Šta NE postoji još:** Livewire/Inertia/API/Filament varijante (Faza 8), email verifikacija (ruta postoji ali `User` ne implementira `MustVerifyEmail`), dark mode, Kanban prikaz taskova, mobilni prikaz sidebar-a nije vizuelno proveren (videti napomenu u sekciji redizajna).
+**Šta NE postoji još:** Livewire/Inertia/API/Filament varijante (Faza 8), email verifikacija (ruta postoji ali `User` ne implementira `MustVerifyEmail`), dark mode, Kanban prikaz taskova. (Mobilni prikaz sidebar-a je vizuelno proveren 2026-09-18 — vidi sekciju "PWA + provera mobilnog prikaza"; provera na pravom uređaju još nije rađena.)
 
 ## Okruženje (zatečeno na mašini)
 
@@ -457,7 +458,24 @@ Ostalo se na **PHPUnit** (već korišćen, korisnik nije tražio Pest — nije n
 
 **Bezbednost pre prave produkcije:** Google secret, Facebook secret i TiDB/Render vrednosti su u nekom trenutku nalepljeni u chat → zameniti (Google: novi secret u Clients; Meta: Reset App Secret; TiDB: novi password). Za pravu app: privacy policy URL i Live režim za Meta, *In production* za Google, svoj domen.
 
-**Sledeće:** 5) PWA (manifest + service worker) i vizuelna provera mobilnog prikaza sidebar-a; zatim odluka o mobilnoj aplikaciji (Capacitor ili nativna uz API); Faza 8 ostaje odložena.
+### PWA + provera mobilnog prikaza (2026-09-18, commit `6d5344b` + izmena iOS status bara)
+
+**Šta je dodato (Progressive Web App):**
+- `public/manifest.webmanifest` — ime Taskly, `display: standalone`, `start_url: /dashboard`, tamna tema (`#09090b`), ikonice (any + maskable) i prečica "New Task" (`/tasks/create`).
+- `public/icons/` — `icon-192.png`, `icon-512.png` (zaobljene), `icon-maskable-512.png`, `apple-touch-icon.png`; generisane GD-om iz privremene PHP skripte (indigo gradijent + beli "T", 4× supersampling) koja je obrisana. Ako se ikonice menjaju, generisati ponovo istim pristupom (`vendor/bin/sail php <skripta>`).
+- `public/sw.js` — service worker: **stranice se nikad ne keširaju** (sesije/CSRF), navigacija je network-first sa fallback-om na `/offline.html`; hešovani `/build/assets/*` i `/icons/*` su cache-first. Ime keša `taskly-v1-static` — pri promeni logike podići `VERSION`.
+- `public/offline.html` — samostalna dvojezična (EN/SR po jeziku browsera) offline stranica sa "Try again".
+- `resources/views/layouts/partials/pwa-head.blade.php` (manifest, `theme-color`, apple meta tagovi, apple-touch-icon) uključen u `layouts/app` i `layouts/guest`; registracija u `resources/js/app.js` (`navigator.serviceWorker.register('/sw.js')` na `load`).
+- `tests/Feature/PwaTest.php` (4 testa: manifest validan i ikonice postoje sa tačnim dimenzijama, `sw.js`/offline postoje, manifest link u oba layout-a). Ukupno **86 testova**, Pint čist, build prošao.
+- iOS: status bar stil promenjen sa `black-translucent` na `black` — `translucent` pušta sadržaj ispod sata/baterije u standalone režimu, a nemamo `safe-area` razmake.
+
+**Provereno lokalno u Chromeu:** manifest se servira kao `application/manifest+json` (200), SW je `activated` sa scope-om `/`, keš sadrži `/offline.html` i `/icons/icon-192.png`.
+
+**Provera mobilnog prikaza (prvi put vizuelno):** `resize_window` ne radi, pa je app učitana u **iframe širine 388 px** (svoji CSS media query-ji; tehnika: zameniti `document.body` iframe-om preko `javascript_tool`, pa `zoom` screenshot). Rezultat: sidebar slide-over se otvara hamburgerom, linkovi Dashboard/Tasks/Tutorial su klikabilni (`elementFromPoint` pogađa link — nema starog z-index baga), klik na pozadinu zatvara meni; **nema horizontalnog scrolla** na `/dashboard`, `/tasks`, `/tasks/create`, `/profile`, `/tutorial`, `/privacy` (jedini "široki" elementi su dekorativni blob SVG-ovi koji se odsecaju); statistike u dve kolone, lista zadataka i forma pregledne, tutorial GIF-ovi staju (341 px), privacy čitljiva. Nije pronađen nijedan pravi problem.
+
+**Nije provereno:** pravi uređaj (dodir, notch, tastatura), stvarna instalacija ("Add to Home Screen"/*Install app*) i offline ponašanje na telefonu — probati na `https://taskly-olux.onrender.com` (Chrome meni → *Install app*). Guest `/login` se ne prikazuje u iframe-u dok je lokalna sesija prijavljena (preusmerava), pa je guest layout viđen kroz `/privacy`.
+
+**Sledeće:** odluka o mobilnoj aplikaciji (opcije: PWA je već gotov; Capacitor omotač; nativna React Native/Flutter uz REST API + Sanctum — deo odložene Faze 8); po potrebi test PWA instalacije na telefonu. Faza 8 ostaje odložena.
 
 ### Postavka na AWS — za pravu aplikaciju kasnije (okvirni koraci; prvo izabrati servis)
 1. **Servis:** Lightsail (najjednostavnije, fiksna cena) ili EC2 (+ RDS za MySQL) za učenje; ECS/Fargate je za kasnije. Sail `compose.yaml` je za razvoj — za produkciju treba nginx + php-fpm (ili produkcioni Dockerfile).
