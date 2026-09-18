@@ -16,7 +16,31 @@ Dodat social login (Laravel Socialite) uz postojeći email/lozinka login. **Prav
 - **UI:** Blade komponenta `resources/views/components/social-login-buttons.blade.php` (razdelnik "or" + dugmad "Continue with Google/Facebook" sa inline SVG logoima, dark stil), uključena u `auth/login` i `auth/register`. Prevodi u `lang/sr.json`.
 - **Konfiguracija:** `config/services.php` (`google`, `facebook` sa `client_id`/`client_secret`/`redirect` — relativni redirect `/auth/{provider}/callback` Socialite sam pretvara u apsolutni URL), `.env.example` dobio `GOOGLE_*` i `FACEBOOK_*` promenljive.
 - **Testovi:** `tests/Feature/Auth/SocialLoginTest.php` (8 testova: dugmad na login/register, redirect ka provajderu, nepodržan provajder 404, novi korisnik, linkovanje po emailu bez duplikata, povratni korisnik, greška provajdera, provajder bez emaila). Ukupno **77 testova** prolazi, Pint čist.
-- **Ostaje korisniku (kredencijali):** Google Cloud Console → OAuth client "Web application", redirect URI `http://localhost:8010/auth/google/callback`; Meta for Developers → app sa "Facebook Login", Valid OAuth Redirect URI `http://localhost:8010/auth/facebook/callback`; vrednosti upisati u `.env` (`GOOGLE_CLIENT_ID/SECRET`, `FACEBOOK_CLIENT_ID/SECRET`). Zatim probati pravi tok u browseru.
+
+### Podešavanje provajdera i pravi test (2026-09-18)
+
+**Google** (Google Cloud → Google Auth Platform):
+- Google Cloud je prvo blokirao pristup dok se ne uključi **2-Step Verification** na Google nalogu (korisnik uključio ručno; uz to "Skip password when possible" ne računa se kao 2SV).
+- Napravljen novi projekat **Taskly** (`taskly-509018`; stari `php-tutorial-a5397` je za drugi tutorijal i nije korišćen).
+- Consent screen: app `Taskly`, **External**, status **Testing**, kontakt/support `xsaero@gmail.com`. Dodat **test korisnik** `xsaero@gmail.com` — bez toga Google odbija prijavu (`access_denied`); u Testing režimu maksimum 100 test korisnika.
+- OAuth client **Taskly local** (Web application), redirect URI `http://localhost:8010/auth/google/callback` (mora tačno da se poklapa, uključujući port 8010).
+- Client secret se prikazuje samo pri kreiranju; ako se izgubi, dodaje se novi u Clients → Taskly local.
+
+**Facebook** (Meta for Developers):
+- Nova aplikacija **Taskly** (App ID `1712588247381610`, Unpublished/development režim), use case **Authenticate and request data from users with Facebook Login**, bez business portfolija. Kontakt email aplikacije je `nikolaraf@hotmail.com` (Meta ga popuni iz naloga).
+- U use case-u dodata dozvola **`email`** uz `public_profile` — obavezno, jer `SocialLoginController` odbija prijavu bez emaila.
+- **Redirect URI se NE dodaje** za lokalni rad: Meta kaže da su `http://localhost` preusmeravanja automatski dozvoljena u development režimu, a `http` URI unos odbija kao nevalidan. Za produkciju treba `https://...` URI u "Valid OAuth Redirect URIs" i prebacivanje aplikacije u **Live** (uz privacy policy URL, moguć App Review).
+- App secret je maskiran; "Show" traži Facebook lozinku (korisnik ručno).
+- U development režimu prijaviti se mogu samo nalozi sa ulogom u aplikaciji (Admin/Developer/Tester); FB nalog bez emaila (samo telefon) neće moći da se prijavi.
+
+**`.env`** (gitignored, ne ide u repo): `GOOGLE_CLIENT_ID/SECRET` i `FACEBOOK_CLIENT_ID/SECRET` popunjeni; posle izmene `vendor/bin/sail artisan config:clear`. Oba secreta su nalepljena u chat pa ih **zameniti pre produkcije** (Google: novi secret u Clients; Meta: Reset App Secret).
+
+**Rezultat testa u browseru (Chrome, oba provajdera uspešna):**
+- **Google** → nov korisnik `id=4` (`xsaero@gmail.com`, uloga `user`, email verifikovan) + `social_accounts` red `google`.
+- **Facebook** → FB je vratio `nikolaraf@hotmail.com`, koji je već pripadao korisniku `id=3` (registrovan 2026-09-16, 1 task) → nalog je **povezan, ne dupliran** (`social_accounts` red `facebook`), a `email_verified_at` je postavljen. Završeno na `/dashboard`.
+- Google i FB emailovi su različiti, pa su to **dva odvojena korisnika** — očekivano ponašanje (poredi se samo email).
+- Za logout iz lokalne app koristiti UI dropdown (POST `/logout`); `/login` je dostupan samo gostima.
+- Napomena: Chrome autofill je popunio email/lozinku na login formi tokom testa — nije stvar aplikacije.
 
 ## Podešavanje sesije (2026-09-18)
 
