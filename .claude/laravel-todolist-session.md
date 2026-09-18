@@ -4,6 +4,50 @@ Cilj: učenje Laravela kroz izradu ToDo List aplikacije na razne načine (Blade,
 
 > **Status: PAUZIRANO nakon Faze 7 + redizajna frontend-a.** Faze 0–7 su odrađene i testirane. Faza 8 (Livewire/Inertia/API/Filament varijante) nije počela i **ODLAŽE SE dok aplikacija ne bude live na internetu** (odluka 2026-09-18). **Trenutni prioritet: postavka na AWS + mobilna aplikacija** (vidi sekciju "Sledeći korak" na dnu). Ova beleška služi kao referenca za pitanja o dosad urađenom — sekcije ispod prate hronologiju rada, "Brzi pregled" ispod je sažetak za brzo pretraživanje.
 
+## Linkovi, URL-ovi i servisi (referenca, ažurirano 2026-09-18)
+
+**Aplikacija**
+- Live: https://taskly-olux.onrender.com (health: `/up`, privacy: `/privacy`, login: `/login`)
+- Lokalno (Sail): http://localhost:8010 · Mailpit http://localhost:8125 · Vite dev server http://localhost:5173 · MySQL `127.0.0.1:3310` · Redis `6310`
+- Lokalni OAuth callback-ovi: `http://localhost:8010/auth/google/callback`, `http://localhost:8010/auth/facebook/callback` (Facebook ih ne traži u listi — localhost je automatski dozvoljen u development režimu)
+- Produkcioni OAuth callback-ovi: `https://taskly-olux.onrender.com/auth/google/callback`, `https://taskly-olux.onrender.com/auth/facebook/callback`
+
+**Kod / repo (GitHub, nalog `laraveltest1912974`)**
+- Repo (javan): https://github.com/laraveltest1912974/taskly
+- Ključni commit-ovi ove faze: `027180f` social login, `d185301` priprema za Render, `f2a0d85` Render region Frankfurt, `2adc4f3` beleške o deployu
+
+**Render** (workspace *My Workspace*; nalog je vezan za Google nalog *Laravel Test*, avatar "L")
+- Dashboard: https://dashboard.render.com/
+- Servis `taskly` (`srv-dampi13m8hqs73absqb0`): pregled https://dashboard.render.com/web/srv-dampi13m8hqs73absqb0 · Deploys `.../deploys` · Logs `.../logs?t=app&r=1h` · Environment `.../env` (tu se menjaju secreti i `APP_URL`; izmena okida redeploy)
+- Blueprint `taskly` (`exs-dampe34ri2ms73bb783g`): https://dashboard.render.com/blueprint/exs-dampe34ri2ms73bb783g/sync/exe-dampe34ri2ms73bb786g
+- Novi blueprint iz javnog repoa: https://dashboard.render.com/select-repo?type=blueprint
+
+**TiDB Cloud** (org *Nikola's Org*, `orgId=1372813089209366969`)
+- Lista resursa: https://tidbcloud.com/tidbs?orgId=1372813089209366969
+- Instanca `taskly` (`10174430657315079062`): overview https://tidbcloud.com/tidbs/10174430657315079062/overview?orgId=1372813089209366969 · SQL Editor `.../sqleditor?orgId=1372813089209366969` · *Connect* dijalog na overview-u (lozinka se generiše tamo, prikazuje samo jednom)
+- Baza `taskly`, host `gateway01.eu-central-1.prod.aws.tidbcloud.com`, port 4000
+
+**Google Cloud / Google Auth Platform** (projekat `taskly-509018`; nalog `xsaero@gmail.com`; stari projekat `php-tutorial-a5397` se ne koristi za Taskly)
+- 2SV (obavezan za Cloud konzolu): https://myaccount.google.com/signinoptions/twosv · Security: https://myaccount.google.com/security
+- Klijenti (redirect URI-ji): https://console.cloud.google.com/auth/clients?project=taskly-509018 (klijent `Taskly local`, Client ID počinje sa `474847234137-erv7…`)
+- Audience / test korisnici: https://console.cloud.google.com/auth/audience?project=taskly-509018
+- Branding: https://console.cloud.google.com/auth/branding?project=taskly-509018 · Overview: https://console.cloud.google.com/auth/overview?project=taskly-509018
+
+**Meta for Developers** (app *Taskly*, App ID `1712588247381610`, Development režim)
+- Moje aplikacije: https://developers.facebook.com/apps/
+- Dashboard: https://developers.facebook.com/apps/1712588247381610/dashboard/
+- Use cases → Facebook Login → Settings (Valid OAuth Redirect URIs): https://developers.facebook.com/apps/1712588247381610/use_cases/customize/settings/?use_case_enum=FB_LOGIN&selected_tab=settings&product_route=fb-login
+- Use cases → dozvole (`email`, `public_profile`): https://developers.facebook.com/apps/1712588247381610/use_cases/customize/?use_case_enum=FB_LOGIN&selected_tab=permissions&product_route=use_cases
+- App settings → Basic (App ID, App secret — *Show* traži Facebook lozinku): https://developers.facebook.com/apps/1712588247381610/settings/basic/
+
+**Ostali korišćeni linkovi**
+- Dizajn inspiracija (samo obrasci, ne kod): https://linear.app · https://todoist.com
+- Bunny Fonts (Inter): https://fonts.bunny.net
+- GitHub device login (korišćen za `gh auth`): https://github.com/login/device
+- Docker Hub slike u `Dockerfile`: `php:8.5-fpm-alpine`, `node:24-alpine`, `composer:2`, `mlocati/php-extension-installer`
+
+**Lokalne komande (sa Windows strane, kroz WSL):** `wsl -d Ubuntu --cd /home/nikola/projects/todolist -- vendor/bin/sail ...` (složeni upiti sa navodnicima: napisati `.sh` u scratchpad i pokrenuti `wsl -d Ubuntu -- bash /mnt/c/.../skripta.sh`).
+
 ## Login preko Googlea i Facebooka (2026-09-18)
 
 Dodat social login (Laravel Socialite) uz postojeći email/lozinka login. **Pravi OAuth tok nije probran u browseru** — nemamo Google/Facebook kredencijale; testovi mockuju Socialite.
@@ -397,7 +441,7 @@ Ostalo se na **PHPUnit** (već korišćen, korisnik nije tražio Pest — nije n
 
 **Kako je urađeno (redosled koji je radio):**
 1. TiDB Cloud: nalog → *Create Resource* → plan **Starter** (podrazumevano je bio izabran *Essential* od ~480 USD/mes koji traži karticu — obavezno prebaciti na Starter) → SQL Editor `CREATE DATABASE taskly;` → *Connect* daje host/port/username (lozinku generiše korisnik, prikazuje se samo jednom; dijalog za AI/Chat2Query zatvoriti bez pristanka).
-2. Render: nalog → *New → Blueprint* → **Public Git Repository** URL `https://github.com/laraveltest1912974/taskly` (GitHub nalog NIJE povezan sa Renderom, pa **nema auto-deploy** — posle svakog pusha ručno *Manual Deploy*). Blueprint traži `sync: false` varijable: `APP_KEY` (`sail artisan key:generate --show`, stavljen u clipboard bez ispisa u chat), `APP_URL`, `DB_HOST/DATABASE/USERNAME/PASSWORD`, Google/Facebook ID i secret. `region: frankfurt` je dodat u `render.yaml` (commit `f2a0d85`) da baza i servis budu u istom regionu.
+2. Render: nalog → *New → Blueprint* → **Public Git Repository** URL `https://github.com/laraveltest1912974/taskly` (GitHub nalog NIJE povezan sa Renderom preko GitHub aplikacije, ali servis je Blueprint-managed i **Render ipak sam pokreće deploy pri svakom pusha na `main`** — trigger *Auto-Deploy*, potvrđeno za commit `2adc4f3`, ~50 s; *Manual Deploy* nije potreban). Blueprint traži `sync: false` varijable: `APP_KEY` (`sail artisan key:generate --show`, stavljen u clipboard bez ispisa u chat), `APP_URL`, `DB_HOST/DATABASE/USERNAME/PASSWORD`, Google/Facebook ID i secret. `region: frankfurt` je dodat u `render.yaml` (commit `f2a0d85`) da baza i servis budu u istom regionu.
 3. Prvi deploy ~2 min (build), migracije su prošle na TiDB-u; posle promene `APP_URL` na pravi URL redeploy ~45 s (keširani slojevi).
 4. **OAuth:** Google klijent `Taskly local` dobio dodatni URI `https://taskly-olux.onrender.com/auth/google/callback`; Facebook *Valid OAuth Redirect URIs* dobio `https://taskly-olux.onrender.com/auth/facebook/callback`. Google app ostaje **Testing** (samo test korisnik `xsaero@gmail.com`), Facebook app **Development** (samo nalozi sa ulogom u aplikaciji).
 
