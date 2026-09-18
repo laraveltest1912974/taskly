@@ -11,6 +11,8 @@ Route::get('/', function () {
     return redirect()->route(Auth::check() ? 'dashboard' : 'login');
 });
 
+Route::view('/privacy', 'privacy')->name('privacy');
+
 Route::get('/locale/{locale}', function (string $locale) {
     abort_unless(array_key_exists($locale, config('app.supported_locales')), 404);
 

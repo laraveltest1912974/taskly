@@ -41,6 +41,10 @@
             <div class="relative z-10 w-full sm:max-w-md mt-6 px-6 py-6 bg-zinc-950/60 backdrop-blur-md ring-1 ring-white/[0.08] overflow-hidden sm:rounded-xl">
                 {{ $slot }}
             </div>
+
+            <div class="relative z-10 mt-4 pb-6">
+                <a href="{{ route('privacy') }}" class="text-[12px] text-zinc-500 hover:text-zinc-300 underline">{{ __('Privacy Policy') }}</a>
+            </div>
         </div>
     </body>
 </html>

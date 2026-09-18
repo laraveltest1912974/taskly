@@ -2,7 +2,7 @@
 
 Cilj: učenje Laravela kroz izradu ToDo List aplikacije na razne načine (Blade, Livewire, Inertia, API...), sa više tipova korisnika, admin dashboard-om i CRUD-om nad dnevnim zadacima. Sve na lokalu, u Docker-u.
 
-> **Status: PAUZIRANO nakon Faze 7 + redizajna frontend-a.** Faze 0–7 su odrađene i testirane. Faza 8 (Livewire/Inertia/API/Filament varijante) nije počela. Ova beleška služi kao referenca za pitanja o dosad urađenom — sekcije ispod prate hronologiju rada, "Brzi pregled" ispod je sažetak za brzo pretraživanje.
+> **Status: PAUZIRANO nakon Faze 7 + redizajna frontend-a.** Faze 0–7 su odrađene i testirane. Faza 8 (Livewire/Inertia/API/Filament varijante) nije počela i **ODLAŽE SE dok aplikacija ne bude live na internetu** (odluka 2026-09-18). **Trenutni prioritet: postavka na AWS + mobilna aplikacija** (vidi sekciju "Sledeći korak" na dnu). Ova beleška služi kao referenca za pitanja o dosad urađenom — sekcije ispod prate hronologiju rada, "Brzi pregled" ispod je sažetak za brzo pretraživanje.
 
 ## Login preko Googlea i Facebooka (2026-09-18)
 
@@ -199,7 +199,9 @@ vendor/bin/sail npm run dev                         # dev watch (za rad na front
 6. Admin dashboard ✅
 - (van originalnog plana) Redizajn frontend-a — moderan sidebar UI ✅
 7. Testovi (PHPUnit) ✅
-8. Iste funkcionalnosti na razne načine: Livewire, Inertia+Vue/React, REST API+Sanctum, Filament — **nije počelo, sledeće na redu**
+8. Iste funkcionalnosti na razne načine: Livewire, Inertia+Vue/React, REST API+Sanctum, Filament — **nije počelo; ODLOŽENO dok app ne bude live** (učenje tehnika je za kasnije)
+9. **Postavka app live na internet** — **sada najvažnije**: proba na **Render** (besplatno), AWS za pravu app kasnije
+10. **Mobilna aplikacija** — **sada najvažnije** (pristup nije izabran, vidi dole)
 
 Odluke koje su već donete: **Docker (Laravel Sail)**, **Breeze + Blade** za Fazu 3-6, **MySQL kroz Sail** za bazu, **prosta `role` kolona** (ne spatie/laravel-permission), **PHPUnit** (ne Pest), **Tailwind v4** (migrirano sa v3 koju je Breeze instalirao), dizajn pravac **Sidebar SaaS indigo/violet** sa redizajniranom listom taskova (ne Kanban).
 
@@ -356,6 +358,52 @@ Ostalo se na **PHPUnit** (već korišćen, korisnik nije tražio Pest — nije n
 - Obrisan trivijalni `tests/Unit/ExampleTest.php` stub (nije ništa testirao)
 - Svih **63 testa** prolazi, Pint čist
 
-## Sledeći korak (Faza 8)
+## Sledeći korak: live na AWS + mobilna app (odluka 2026-09-18)
 
-Iste funkcionalnosti na razne načine: Livewire, Inertia+Vue/React, REST API+Sanctum, Filament. Treba odlučiti sa korisnikom kojim redosledom/da li sve ili izabrati podskup — ovo je najveća preostala faza i verovatno zahteva razdvajanje u više pod-koraka.
+**Faza 8 je odložena** (Livewire, Inertia+Vue/React, REST API+Sanctum, Filament). Učenje tehnika ostaje za posle live postavke. Predlog redosleda kad se vratimo: API + Sanctum → Livewire → Filament → Inertia. Svaka varijanta traži novu zavisnost (potvrda korisnika).
+
+**Sada najvažnije:** proći ceo proces postavke app na internet i napraviti mobilnu aplikaciju. Cilj je da korisnik vidi kompletan roadmap za pravu aplikaciju koju planira uskoro. **Odluka (2026-09-18): proba ide na Render (besplatan plan); AWS (Lightsail/EC2) i Google Play ostaju za pravu aplikaciju.** GitHub Pages ne dolazi u obzir (samo statični fajlovi, nema PHP/MySQL); GitHub Actions se može koristiti za deploy.
+
+### Plan: Render (besplatan plan) — proba live postavke
+
+**Ograničenja besplatnog plana koja menjaju app** (proveriti aktuelne uslove na Renderu, menjaju se):
+- Nema PHP runtime-a → potreban **Docker** (`Dockerfile`: multi-stage, Node za `npm run build`, pa PHP 8.5 + nginx).
+- Servis se **uspava** posle ~15 min neaktivnosti (prvi zahtev ~30–60 s).
+- **Nema trajnog diska** → nema SQLite/fajl-sesija; `SESSION_DRIVER=database`, keš u bazi.
+- Nema besplatnih background workera ni crona → `QUEUE_CONNECTION=sync`, bez schedulera; pre-deploy komanda je plaćena → `migrate --force` ide u start skriptu kontejnera.
+- Nema besplatne MySQL baze (besplatan Postgres ističe posle ~30 dana) → **spoljna besplatna MySQL-kompatibilna baza** (predlog: TiDB Cloud Serverless ili Aiven).
+- TLS završava Render → **`->trustProxies(at: '*')`** u `bootstrap/app.php`, inače Socialite generiše `http://` redirect i OAuth puca. `APP_URL` mora biti `https://...`.
+
+**Koraci:**
+1. **Repo (Claude):** `Dockerfile` + start skripta (migrate, `config/route/view:cache`, pokretanje nginx+php-fpm) + nginx konfiguracija (predlog: u jednom novom folderu `deploy/` — traži odobrenje jer pravila projekta zabranjuju nove osnovne foldere bez saglasnosti), opciono `render.yaml` (Blueprint), `trustProxies`, `.env.production.example`, privacy policy stranica (treba za Meta Live).
+2. **Spoljna baza (korisnik):** napraviti nalog i besplatnu MySQL-kompatibilnu bazu (nalog ne pravi Claude).
+3. **Render (korisnik):** nalog → New Web Service → GitHub repo `taskly` → Docker → Free plan. **Env varijable** (`APP_KEY`, DB podaci, Google/Facebook ID i secret, `APP_URL`, `APP_ENV=production`, `APP_DEBUG=false`) upisuje korisnik u Render dashboard — Claude ne unosi secrete u web forme.
+4. **OAuth i provera:** besplatan HTTPS na `*.onrender.com`. Google: dodati `https://<ime>.onrender.com/auth/google/callback` u klijent (app može ostati **Testing**); Facebook: isti https URI u *Valid OAuth Redirect URIs* (app ostaje **Development**). Za probu nije potrebna objava. Zatim test prijave u browseru.
+5. **Mobilno:** PWA (manifest + service worker) i vizuelna provera mobilnog prikaza sidebar-a.
+
+**Odluke (korisnik, 2026-09-18):** dozvoljeno dodavanje `Dockerfile`/`deploy/`/`render.yaml`; baza = **TiDB Cloud Serverless**.
+
+**Korak 1 završen (2026-09-18) — repo je spreman za Render:**
+- `Dockerfile` (3 faze: `composer:2` za vendor, `node:24-alpine` za `npm run build`, `php:8.5-fpm-alpine` + nginx + supervisor za runtime; PHP ekstenzije `pdo_mysql intl zip`), `.dockerignore` (isključuje `.env*`, `vendor`, `node_modules`, `public/build|hot`, `bootstrap/cache/*.php` da dev provajderi ne uđu u image).
+- `deploy/`: `nginx.conf` (sluša `$PORT`, Render podrazumevano 10000), `supervisord.conf` (nginx + php-fpm), `php.ini` (opcache), `php-fpm.conf` (`clear_env = no`, `catch_workers_output`), `start.sh` (proverava `APP_KEY`, `migrate --force`, `config/route/view:cache`, pokreće supervisor).
+- `render.yaml` (Blueprint; `sync: false` promenljive Render traži pri kreiranju — tu korisnik upisuje secrete), `.env.production.example`.
+- `bootstrap/app.php`: `$middleware->trustProxies(at: '*')`. Novo: javna stranica `/privacy` (`privacy.blade.php`, prevedena u `sr.json`, link u `guest` layoutu), `tests/Feature/ProductionReadinessTest.php` (5 testova: privacy javna/prevedena/link, https URL-ovi iza proksija, `/up`). Ukupno **82 testa** prolazi, Pint čist.
+- **Lokalno provereno:** Docker build prošao; kontejner protiv Sail MySQL-a startuje (`Nothing to migrate`, cache-ovi, nginx+php-fpm RUNNING); `/up`, `/login`, `/privacy` = 200, Vite asseti se serviraju, `X-Forwarded-Proto: https` daje https URL-ove, tutorial GIF-ovi se serviraju.
+- **TiDB napomena:** TLS je obavezan → `MYSQL_ATTR_SSL_CA=/etc/ssl/certs/ca-certificates.crt` (već u `render.yaml`), port **4000**, korisničko ime kod TiDB Serverless ima prefiks. Proveriti tačne vrednosti u TiDB konzoli ("Connect").
+
+**Sledeći koraci (korisnik):** 2) TiDB Cloud nalog + Serverless klaster + baza; 3) Render nalog, New Web Service/Blueprint iz GitHub repoa `taskly`, upis env varijabli; 4) OAuth https redirect URI-ji + test prijave; 5) PWA i mobilni prikaz.
+
+### Postavka na AWS — za pravu aplikaciju kasnije (okvirni koraci; prvo izabrati servis)
+1. **Servis:** Lightsail (najjednostavnije, fiksna cena) ili EC2 (+ RDS za MySQL) za učenje; ECS/Fargate je za kasnije. Sail `compose.yaml` je za razvoj — za produkciju treba nginx + php-fpm (ili produkcioni Dockerfile).
+2. **Domen + DNS** (Route 53 ili spoljni registrar) i **HTTPS** (Let's Encrypt/certbot ili ALB + ACM).
+3. **Produkcioni `.env`:** `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=https://...`, nov `APP_KEY`, produkciona baza, session/cache/queue drajveri, **mail preko SES** (Mailpit je samo za razvoj).
+4. **Deploy:** `git pull`, `composer install --no-dev`, `npm run build`, `artisan migrate --force`, `config:cache route:cache view:cache`; queue worker (supervisor) i cron za scheduler; dozvole nad `storage`/`bootstrap/cache`.
+5. **Sigurnost/rad:** security group-e, backup baze, monitoring/logovi.
+6. **OAuth za produkciju:** dodati `https://<domen>/auth/{google,facebook}/callback` u Google client i Meta app, prebaciti Google app u *In production* i Meta app u *Live* (privacy policy URL, moguć App Review), **zameniti secrete** koji su bili nalepljeni u chat.
+7. Napomena: `public/tutorial-clips/` je ~12MB binarnih GIF-ova u repou.
+
+### Mobilna aplikacija — opcije (nije izabrano)
+- **Responsive web / PWA:** najjeftinije, "Add to Home Screen"; mobilni prikaz sidebar-a još nije vizuelno proveren (poznato ograničenje).
+- **Capacitor omotač** oko postojeće web app: brzo, ali ima ograničenja u prodavnicama (Apple često odbija "tanke" web omotače) i Google login ne sme u ugrađenom WebView-u (`disallowed_useragent`) — traži sistemski browser/nativni plugin.
+- **Nativna app (React Native/Flutter):** traži **REST API + Sanctum** (deo odložene Faze 8 — tu se javlja veza sa odlaganjem).
+- Prodavnice: Google Play jednokratno ~25 USD, Apple Developer ~99 USD godišnje.
