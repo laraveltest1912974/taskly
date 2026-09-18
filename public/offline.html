@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#09090b">
+    <title>Taskly</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: #09090b;
+            color: #e4e4e7;
+            font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+            text-align: center;
+        }
+        .logo {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 20px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #818cf8, #4f46e5);
+            color: #fff;
+            font-weight: 700;
+            font-size: 22px;
+            line-height: 48px;
+        }
+        h1 { margin: 0 0 8px; font-size: 18px; font-weight: 600; color: #f4f4f5; }
+        p { margin: 0 0 20px; font-size: 14px; color: #a1a1aa; }
+        button {
+            padding: 8px 16px;
+            border: 0;
+            border-radius: 8px;
+            background: #6366f1;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <div class="logo">T</div>
+        <h1 id="title">You are offline</h1>
+        <p id="message">Taskly needs a connection to load your tasks. Check your internet and try again.</p>
+        <button id="retry" type="button">Try again</button>
+    </main>
+    <script>
+        if ((navigator.language || '').toLowerCase().startsWith('sr')) {
+            document.documentElement.lang = 'sr';
+            document.getElementById('title').textContent = 'Niste na mreži';
+            document.getElementById('message').textContent = 'Taskly treba internet konekciju da učita vaše zadatke. Proverite konekciju i pokušajte ponovo.';
+            document.getElementById('retry').textContent = 'Pokušaj ponovo';
+        }
+        document.getElementById('retry').addEventListener('click', function () { location.reload(); });
+    </script>
+</body>
+</html>
