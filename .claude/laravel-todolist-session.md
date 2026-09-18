@@ -391,7 +391,29 @@ Ostalo se na **PHPUnit** (već korišćen, korisnik nije tražio Pest — nije n
 - **Lokalno provereno:** Docker build prošao; kontejner protiv Sail MySQL-a startuje (`Nothing to migrate`, cache-ovi, nginx+php-fpm RUNNING); `/up`, `/login`, `/privacy` = 200, Vite asseti se serviraju, `X-Forwarded-Proto: https` daje https URL-ove, tutorial GIF-ovi se serviraju.
 - **TiDB napomena:** TLS je obavezan → `MYSQL_ATTR_SSL_CA=/etc/ssl/certs/ca-certificates.crt` (već u `render.yaml`), port **4000**, korisničko ime kod TiDB Serverless ima prefiks. Proveriti tačne vrednosti u TiDB konzoli ("Connect").
 
-**Sledeći koraci (korisnik):** 2) TiDB Cloud nalog + Serverless klaster + baza; 3) Render nalog, New Web Service/Blueprint iz GitHub repoa `taskly`, upis env varijabli; 4) OAuth https redirect URI-ji + test prijave; 5) PWA i mobilni prikaz.
+### Rezultat: app je LIVE na Renderu (2026-09-18)
+
+**Javni URL: https://taskly-olux.onrender.com** (Render web service `taskly`, `srv-dampi13m8hqs73absqb0`, Docker, Free, Frankfurt). Baza: TiDB Cloud Starter instanca `taskly` (Frankfurt, spending limit 0, bez kartice), baza `taskly`, host `gateway01.eu-central-1.prod.aws.tidbcloud.com`, port 4000, TLS preko `MYSQL_ATTR_SSL_CA`.
+
+**Kako je urađeno (redosled koji je radio):**
+1. TiDB Cloud: nalog → *Create Resource* → plan **Starter** (podrazumevano je bio izabran *Essential* od ~480 USD/mes koji traži karticu — obavezno prebaciti na Starter) → SQL Editor `CREATE DATABASE taskly;` → *Connect* daje host/port/username (lozinku generiše korisnik, prikazuje se samo jednom; dijalog za AI/Chat2Query zatvoriti bez pristanka).
+2. Render: nalog → *New → Blueprint* → **Public Git Repository** URL `https://github.com/laraveltest1912974/taskly` (GitHub nalog NIJE povezan sa Renderom, pa **nema auto-deploy** — posle svakog pusha ručno *Manual Deploy*). Blueprint traži `sync: false` varijable: `APP_KEY` (`sail artisan key:generate --show`, stavljen u clipboard bez ispisa u chat), `APP_URL`, `DB_HOST/DATABASE/USERNAME/PASSWORD`, Google/Facebook ID i secret. `region: frankfurt` je dodat u `render.yaml` (commit `f2a0d85`) da baza i servis budu u istom regionu.
+3. Prvi deploy ~2 min (build), migracije su prošle na TiDB-u; posle promene `APP_URL` na pravi URL redeploy ~45 s (keširani slojevi).
+4. **OAuth:** Google klijent `Taskly local` dobio dodatni URI `https://taskly-olux.onrender.com/auth/google/callback`; Facebook *Valid OAuth Redirect URIs* dobio `https://taskly-olux.onrender.com/auth/facebook/callback`. Google app ostaje **Testing** (samo test korisnik `xsaero@gmail.com`), Facebook app **Development** (samo nalozi sa ulogom u aplikaciji).
+
+**Ručni test na javnom URL-u (Chrome) — sve prošlo:** Google i Facebook prijava; odjava; kreiranje (validacija + poruka "Task created."), izmena (status/prioritet, dashboard statistika prati), brisanje ("Zadatak je obrisan."); EN/SR prebacivanje sa pamćenjem u sesiji; svih 7 tutorial GIF-ova se učitava; profil se otvara i čuva ("Sačuvano"); `/admin/dashboard` = 403 za običnog korisnika; kao gost zaštićene rute preusmeravaju na login, a `/login`, `/register`, `/forgot-password`, `/privacy`, `/up` = 200; https linkovi za socijalnu prijavu (trustProxies radi).
+
+**Nije testirano:** admin dashboard kao admin (u novoj bazi nema admina; može `UPDATE users SET role='admin' WHERE email=...` u TiDB SQL Editoru), prijava/registracija/reset lozinkom (ne unosimo lozinke kroz automatizaciju), brisanje naloga (destruktivno), mobilni prikaz.
+
+**Zapažanja / poznata ograničenja:**
+- Besplatan Render se **uspava** posle ~15 min neaktivnosti; prvi zahtev ~50 s. Nema crona ni queue workera (`QUEUE_CONNECTION=sync`), sesije/keš u bazi, mail preko `log` drajvera.
+- Posle prijave `redirect()->intended()` vraća na poslednju zaštićenu stranicu koju je gost tražio — ako je to `/admin/dashboard`, običan korisnik vidi 403 (laravel ponašanje; može se lepše rešiti).
+- Chrome ekstenzija je na `facebook.com` kratko vratila "Permission denied for this action on this domain" za screenshot, ali je klik prošao — ako se ponovi, proveriti stanje kroz `get_page_text`.
+- `render.yaml` ima `sync: false` za secrete — **secreti se nikad ne upisuju u repo**, samo u Render dashboard.
+
+**Bezbednost pre prave produkcije:** Google secret, Facebook secret i TiDB/Render vrednosti su u nekom trenutku nalepljeni u chat → zameniti (Google: novi secret u Clients; Meta: Reset App Secret; TiDB: novi password). Za pravu app: privacy policy URL i Live režim za Meta, *In production* za Google, svoj domen.
+
+**Sledeće:** 5) PWA (manifest + service worker) i vizuelna provera mobilnog prikaza sidebar-a; zatim odluka o mobilnoj aplikaciji (Capacitor ili nativna uz API); Faza 8 ostaje odložena.
 
 ### Postavka na AWS — za pravu aplikaciju kasnije (okvirni koraci; prvo izabrati servis)
 1. **Servis:** Lightsail (najjednostavnije, fiksna cena) ili EC2 (+ RDS za MySQL) za učenje; ECS/Fargate je za kasnije. Sail `compose.yaml` je za razvoj — za produkciju treba nginx + php-fpm (ili produkcioni Dockerfile).
