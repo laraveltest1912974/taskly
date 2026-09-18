@@ -27,6 +27,14 @@ class User extends Authenticatable
         return $this->hasMany(Task::class);
     }
 
+    /**
+     * Get the social login accounts linked to the user.
+     */
+    public function socialAccounts(): HasMany
+    {
+        return $this->hasMany(SocialAccount::class);
+    }
+
     public function isAdmin(): bool
     {
         return $this->role === UserRole::Admin;

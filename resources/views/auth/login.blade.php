@@ -52,4 +52,6 @@
             </div>
         </div>
     </form>
+
+    <x-social-login-buttons class="mt-6" />
 </x-guest-layout>

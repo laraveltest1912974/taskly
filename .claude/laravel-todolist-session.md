@@ -4,6 +4,25 @@ Cilj: učenje Laravela kroz izradu ToDo List aplikacije na razne načine (Blade,
 
 > **Status: PAUZIRANO nakon Faze 7 + redizajna frontend-a.** Faze 0–7 su odrađene i testirane. Faza 8 (Livewire/Inertia/API/Filament varijante) nije počela. Ova beleška služi kao referenca za pitanja o dosad urađenom — sekcije ispod prate hronologiju rada, "Brzi pregled" ispod je sažetak za brzo pretraživanje.
 
+## Login preko Googlea i Facebooka (2026-09-18)
+
+Dodat social login (Laravel Socialite) uz postojeći email/lozinka login. **Pravi OAuth tok nije probran u browseru** — nemamo Google/Facebook kredencijale; testovi mockuju Socialite.
+
+- **Zavisnost:** `laravel/socialite` v5.31. Instalacija je prvo pala jer najnoviji Socialite vuče `league/oauth1-client` koji ne podržava Guzzle 8 (projekat je imao `guzzlehttp/guzzle` 8.2.0). Uz odobrenje korisnika pokrenuto `composer require laravel/socialite -W`, što je **spustilo Guzzle (i promises/psr7) na 7.x** — Laravel 13 i Boost dozvoljavaju `^7.8 || ^8.0`, pa je bezbedno. Kad `oauth1-client` podrži Guzzle 8, može se vratiti gore.
+- **Baza:** tabela `social_accounts` (`user_id` FK cascade, `provider`, `provider_user_id`, unique `[provider, provider_user_id]`) — bolje od kolona na `users` jer jedan korisnik može imati više provajdera. Model `SocialAccount` (`#[Fillable]`, `user()`), `SocialAccountFactory`, `User::socialAccounts()`.
+- **Kontroler:** `App\Http\Controllers\Auth\SocialLoginController` (`redirect`, `callback`). Rute u `routes/auth.php` (guest grupa): `/auth/{provider}/redirect` (`social.redirect`) i `/auth/{provider}/callback` (`social.callback`), provajder ograničen sa `whereIn('provider', ['google', 'facebook'])` — sve ostalo 404.
+- **Logika callback-a:** (1) postojeći `social_accounts` red → prijavi tog korisnika; (2) inače nalog sa istim emailom → **poveži provajdera sa postojećim nalogom** (odluka korisnika, ne odbijaj); (3) inače novi `User` sa `Str::password()` lozinkom. Novi/povezani nalozi dobijaju `email_verified_at`. Izuzetak od provajdera ili prazan email → redirect na `/login` sa `email` greškom (prevedeno).
+- **⚠️ Sigurnosna napomena:** povezivanje po emailu je sigurno za Google (email verifikovan), ali slabije za Facebook — neko sa FB nalogom na tuđ email može preuzeti postojeći nalog. Prihvatljivo za lični/learning projekat; za produkciju tražiti potvrdu lozinke pre povezivanja.
+- **UI:** Blade komponenta `resources/views/components/social-login-buttons.blade.php` (razdelnik "or" + dugmad "Continue with Google/Facebook" sa inline SVG logoima, dark stil), uključena u `auth/login` i `auth/register`. Prevodi u `lang/sr.json`.
+- **Konfiguracija:** `config/services.php` (`google`, `facebook` sa `client_id`/`client_secret`/`redirect` — relativni redirect `/auth/{provider}/callback` Socialite sam pretvara u apsolutni URL), `.env.example` dobio `GOOGLE_*` i `FACEBOOK_*` promenljive.
+- **Testovi:** `tests/Feature/Auth/SocialLoginTest.php` (8 testova: dugmad na login/register, redirect ka provajderu, nepodržan provajder 404, novi korisnik, linkovanje po emailu bez duplikata, povratni korisnik, greška provajdera, provajder bez emaila). Ukupno **77 testova** prolazi, Pint čist.
+- **Ostaje korisniku (kredencijali):** Google Cloud Console → OAuth client "Web application", redirect URI `http://localhost:8010/auth/google/callback`; Meta for Developers → app sa "Facebook Login", Valid OAuth Redirect URI `http://localhost:8010/auth/facebook/callback`; vrednosti upisati u `.env` (`GOOGLE_CLIENT_ID/SECRET`, `FACEBOOK_CLIENT_ID/SECRET`). Zatim probati pravi tok u browseru.
+
+## Podešavanje sesije (2026-09-18)
+
+- Ovaj fajl je uvezen u `CLAUDE.md` (`@.claude/laravel-todolist-session.md`, sekcija "Session navigation" ispod Boost bloka) da se automatski učitava na početku svake sesije. Ako je fajl velik, uvećava kontekst svake sesije. Boost može prepisati `CLAUDE.md` pri `boost:update` — import držati van `<laravel-boost-guidelines>` bloka.
+- Sa Windows strane Sail se pokreće preko `wsl -d Ubuntu --cd /home/nikola/projects/todolist -- vendor/bin/sail ...`. Kontejneri: `sail up -d`, pa `sail npm run dev` (Vite na 5173). Napomena: Vite ispisuje `APP_URL: http://localhost:8000`, a app je na **8010** (`.env.example` i dalje ima 8000).
+
 ## Lightbox za Tutorial GIF-ove (2026-09-16)
 
 Korisnik je pitao "Postoji li opcija da se klikom na gifove oni uvelicaju?" — dodat click-to-enlarge lightbox u `resources/views/tutorial/index.blade.php`.
@@ -117,7 +136,7 @@ Traženo kao među-task: app treba da bude dvojezična (engleski/srpski), i seed
 ```bash
 vendor/bin/sail up -d                              # pokreni kontejnere
 vendor/bin/sail artisan migrate:fresh --seed        # reset baze + seed
-vendor/bin/sail artisan test --compact              # 69 testa
+vendor/bin/sail artisan test --compact              # 77 testova
 vendor/bin/sail bin pint --format agent             # formatiranje
 vendor/bin/sail npm run build                       # build frontend assets (Tailwind v4)
 vendor/bin/sail npm run dev                         # dev watch (za rad na frontend-u)
@@ -127,6 +146,7 @@ vendor/bin/sail npm run dev                         # dev watch (za rad na front
 
 **Šta postoji funkcionalno:**
 - Registracija/login/reset lozinke/profil (Breeze)
+- Login preko Googlea i Facebooka (Socialite; čeka kredencijale u `.env`)
 - CRUD nad zadacima (`/tasks`) sa poljima title/description/due_date/status/priority, vlasništvo po korisniku
 - Admin dashboard (`/admin/dashboard`) — statistike + pregled svih korisnika/taskova
 - Tamna, Linear/Todoist-inspirisana tema — sidebar, grid+glow+blob pozadina, indigo/violet brand ("Taskly")

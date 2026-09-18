@@ -171,3 +171,7 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Run `vendor/bin/sail bin phpunit` to call the test runner directly. It accepts the same file path and `--filter=testName` arguments.
 
 </laravel-boost-guidelines>
+
+## Session navigation
+
+@.claude/laravel-todolist-session.md
