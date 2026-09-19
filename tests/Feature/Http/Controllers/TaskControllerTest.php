@@ -33,6 +33,20 @@ class TaskControllerTest extends TestCase
         $response->assertDontSee($othersTask->title);
     }
 
+    public function test_task_title_on_index_links_to_the_edit_page(): void
+    {
+        $user = User::factory()->create();
+        $task = Task::factory()->for($user)->create(['title' => 'Tap me on mobile']);
+
+        $response = $this->actingAs($user)->get(route('tasks.index'));
+
+        $editUrl = preg_quote(route('tasks.edit', $task), '/');
+        $this->assertMatchesRegularExpression(
+            '/<a href="'.$editUrl.'"[^>]*>\s*<div[^>]*>\s*Tap me on mobile/',
+            $response->getContent(),
+        );
+    }
+
     public function test_admin_sees_all_users_tasks_on_index(): void
     {
         $admin = User::factory()->admin()->create();
