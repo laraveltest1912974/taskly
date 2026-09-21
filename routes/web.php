@@ -13,6 +13,17 @@ Route::get('/', function () {
 
 Route::view('/privacy', 'privacy')->name('privacy');
 
+// Signing out is a POST only. Opening /logout in the browser (a typed address, a bookmark) would otherwise end in a
+// 405, and signing out on a GET would let any page log a user out: a signed-in user gets a confirmation with a POST
+// button, a guest goes to the login page.
+Route::get('/logout', function () {
+    if (! Auth::check()) {
+        return redirect()->route('login');
+    }
+
+    return view('auth.confirm-logout', ['backUrl' => url()->previous(route('dashboard'))]);
+})->name('logout.confirm');
+
 Route::get('/locale/{locale}', function (string $locale) {
     abort_unless(array_key_exists($locale, config('app.supported_locales')), 404);
 
