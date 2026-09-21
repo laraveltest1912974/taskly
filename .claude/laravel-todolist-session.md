@@ -4,7 +4,7 @@ Cilj: učenje Laravela kroz izradu ToDo List aplikacije na razne načine (Blade,
 
 > **Status: PAUZIRANO nakon Faze 7 + redizajna frontend-a.** Faze 0–7 su odrađene i testirane. Faza 8 (Livewire/Inertia/API/Filament varijante) nije počela i **ODLAŽE SE dok aplikacija ne bude live na internetu** (odluka 2026-09-18). **Trenutni prioritet: postavka na AWS + mobilna aplikacija** (vidi sekciju "Sledeći korak" na dnu). Ova beleška služi kao referenca za pitanja o dosad urađenom — sekcije ispod prate hronologiju rada, "Brzi pregled" ispod je sažetak za brzo pretraživanje.
 
-> **Zajednički priručnik za sve projekte** (secreti, Render + TiDB recept, PWA, mobilna provera, ffmpeg za demo snimke): `~/projects/radni-tokovi-i-alati.md`. Drugi projekat: Termino (`~/projects/termino`, live https://termino-o4l8.onrender.com, status u `~/projects/zakazivanje-plan-projekta-i-kursa.md`).
+> **Zajednički priručnik za sve projekte** (secreti, Render + TiDB recept, PWA, mobilna provera, ffmpeg za demo snimke): `~/projects/radni-tokovi-i-alati.md`. Drugi projekat: Termino (`~/projects/termino`, live https://termino-o4l8.onrender.com, status u `~/projects/termino/.claude/termino-session.md`). Treći projekat: Fakturator (`~/projects/fakturator`, live https://fakturator-ap0e.onrender.com, status u `~/projects/fakturator/.claude/fakturator-session.md`).
 
 ## Linkovi, URL-ovi i servisi (referenca, ažurirano 2026-09-18)
 
