@@ -1,8 +1,8 @@
-# Laravel ToDo List — izvod sesije (2026-09-15)
+# Laravel ToDo List — izvod sesije (ažurirano 2026-10-06)
 
 Cilj: učenje Laravela kroz izradu ToDo List aplikacije na razne načine (Blade, Livewire, Inertia, API...), sa više tipova korisnika, admin dashboard-om i CRUD-om nad dnevnim zadacima. Sve na lokalu, u Docker-u.
 
-> **Status: PAUZIRANO nakon Faze 7 + redizajna frontend-a.** Faze 0–7 su odrađene i testirane. Faza 8 (Livewire/Inertia/API/Filament varijante) nije počela i **ODLAŽE SE dok aplikacija ne bude live na internetu** (odluka 2026-09-18). **Trenutni prioritet: postavka na AWS + mobilna aplikacija** (vidi sekciju "Sledeći korak" na dnu). Ova beleška služi kao referenca za pitanja o dosad urađenom — sekcije ispod prate hronologiju rada, "Brzi pregled" ispod je sažetak za brzo pretraživanje.
+> **Status: PAUZIRANO nakon Faze 7 + redizajna frontend-a.** Faze 0–7 su odrađene i testirane. Faza 8 (Livewire/Inertia/API/Filament varijante) nije počela i **ODLAŽE SE dok aplikacija ne bude live na internetu** (odluka 2026-09-18). **Trenutni prioritet: postavka na AWS + mobilna aplikacija** (vidi sekciju "Sledeći korak" na dnu). **Pravo slanje mejlova (reset lozinke) sad radi** — Brevo SMTP, vidi sekciju ispod. Ova beleška služi kao referenca za pitanja o dosad urađenom — sekcije ispod prate hronologiju rada, "Brzi pregled" ispod je sažetak za brzo pretraživanje.
 
 > **Zajednički priručnik za sve projekte** (secreti, Render + TiDB recept, PWA, mobilna provera, ffmpeg za demo snimke): `~/projects/radni-tokovi-i-alati.md`. Drugi projekat: Termino (`~/projects/termino`, live https://termino-o4l8.onrender.com, status u `~/projects/termino/.claude/termino-session.md`). Treći projekat: Fakturator (`~/projects/fakturator`, live https://fakturator-ap0e.onrender.com, status u `~/projects/fakturator/.claude/fakturator-session.md`).
 
@@ -453,7 +453,7 @@ Ostalo se na **PHPUnit** (već korišćen, korisnik nije tražio Pest — nije n
 **Nije testirano:** admin dashboard kao admin (u novoj bazi nema admina; može `UPDATE users SET role='admin' WHERE email=...` u TiDB SQL Editoru), prijava/registracija/reset lozinkom (ne unosimo lozinke kroz automatizaciju), brisanje naloga (destruktivno), mobilni prikaz.
 
 **Zapažanja / poznata ograničenja:**
-- Besplatan Render se **uspava** posle ~15 min neaktivnosti; prvi zahtev ~50 s. Nema crona ni queue workera (`QUEUE_CONNECTION=sync`), sesije/keš u bazi, mail preko `log` drajvera.
+- Besplatan Render se **uspava** posle ~15 min neaktivnosti; prvi zahtev ~50 s. Nema crona ni queue workera (`QUEUE_CONNECTION=sync`), sesije/keš u bazi. Mail je u početku bio preko `log` drajvera — **od 2026-10-06 pravi SMTP (Brevo)**, vidi sekciju "Pravi SMTP — Brevo" dalje u fajlu.
 - Posle prijave `redirect()->intended()` vraća na poslednju zaštićenu stranicu koju je gost tražio — ako je to `/admin/dashboard`, običan korisnik vidi 403 (laravel ponašanje; može se lepše rešiti).
 - Chrome ekstenzija je na `facebook.com` kratko vratila "Permission denied for this action on this domain" za screenshot, ali je klik prošao — ako se ponovi, proveriti stanje kroz `get_page_text`.
 - `render.yaml` ima `sync: false` za secrete — **secreti se nikad ne upisuju u repo**, samo u Render dashboard.
@@ -480,6 +480,18 @@ Ostalo se na **PHPUnit** (već korišćen, korisnik nije tražio Pest — nije n
 **Nije provereno:** pravi mobilni uređaj (dodir, notch, tastatura) i instalacija na telefonu (Chrome → *Install app*, Safari → *Add to Home Screen*) — probati na `https://taskly-olux.onrender.com`. Guest `/login` se ne prikazuje u iframe-u dok je lokalna sesija prijavljena (preusmerava), pa je guest layout viđen kroz `/privacy`.
 
 **Sledeće:** odluka o mobilnoj aplikaciji (opcije: PWA je već gotov; Capacitor omotač; nativna React Native/Flutter uz REST API + Sanctum — deo odložene Faze 8); po potrebi test PWA instalacije na telefonu. Faza 8 ostaje odložena.
+
+### Pravi SMTP — Brevo (2026-10-06)
+
+Taskly šalje samo jedan tip mejla (reset lozinke, Breeze default) — sad stvarno radi, ne samo `log`. Isti Brevo nalog kao Fakturator/Termino, isti recept:
+
+1. **Port 587 (i 465, 25) je tiho blokiran na Render free planu** — veza samo visi do timeout-a. Rešenje: **port 2525**.
+2. **Brevo SMTP "Login" NIJE mejl adresa naloga** — poseban generisan username (`bcc0cb001@smtp-brevo.com`, vidi se na Brevo → Transactional → Email → SMTP settings). Prava mejl adresa kao username daje "535 Authentication failed".
+3. **Render Blueprint sync je nepouzdan za nove `sync: false` env varijable** — `MAIL_FROM_ADDRESS`/`MAIL_USERNAME`/`MAIL_PASSWORD` nisu se pojavili u Environment tabu posle prvog push-a (trebalo ih je ručno dodati kroz Edit → Add variable).
+4. Dok te vrednosti nisu bile popunjene, pokušaj reset lozinke je pukao sa **500 greškom** ("502 5.7.0 Please authenticate first" u Render logu, `MAIL FROM` je pokazivao Laravel-ov default `hello@example.com` — znak da `MAIL_FROM_ADDRESS` uopšte nije setovan).
+5. Konačna podešavanja: `MAIL_MAILER=smtp`, `MAIL_HOST=smtp-relay.brevo.com`, `MAIL_PORT=2525`, `MAIL_USERNAME=bcc0cb001@smtp-brevo.com`, `MAIL_FROM_ADDRESS=laraveltest1912974@gmail.com`.
+6. Potvrđeno uživo: "Email Password Reset Link" na `/forgot-password`, Brevo status "Delivered", mejl fizički stigao u Gmail inbox.
+7. Najpouzdaniji način provere da li je mejl STVARNO poslat: Brevo → Transactional → Email → **Real time**/**Logs** (Sent → Delivered) — ne samo odsustvo 500/greške u app-u.
 
 ### Postavka na AWS — za pravu aplikaciju kasnije (okvirni koraci; prvo izabrati servis)
 1. **Servis:** Lightsail (najjednostavnije, fiksna cena) ili EC2 (+ RDS za MySQL) za učenje; ECS/Fargate je za kasnije. Sail `compose.yaml` je za razvoj — za produkciju treba nginx + php-fpm (ili produkcioni Dockerfile).
